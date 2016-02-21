@@ -1,0 +1,35 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Readynas Playbook
+  hosts: readynas
+
+  tasks:
+    - name: Enable Samba syslog
+      lineinfile: 
+        name: /etc/frontview/samba/smb.conf.defaults
+        state: present
+        regexp: "^syslog"
+        line: "syslog = 1"
+      register: change_in_mdns                  
+    - name: Disable Samba from providing multicast DNS
+      lineinfile: 
+        name: /etc/frontview/samba/smb.conf.defaults
+        state: present
+        regexp: "^multicast dns register"
+        line: "multicast dns register = no"
+      register: change_in_mdns                  
+
+    - name: restart samba
+      service: 
+        name: smb
+        state: restarted
+      when: change_in_mdns.changed
+
+    - name: Add Avahi based SMB service
+      template:
+        src: samba.service.j2
+        dest: /etc/avahi/services/samba.service
+        owner: root
+        group: root
+        mode: 0444
+
