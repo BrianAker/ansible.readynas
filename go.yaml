@@ -4,27 +4,29 @@
   hosts: readynas
 
   tasks:
-    - name: Enable Samba syslog
-      lineinfile: 
-        name: /etc/frontview/samba/smb.conf.defaults
-        state: present
-        regexp: "^syslog"
-        line: "syslog = 1"
-      register: change_in_mdns                  
     - name: Disable Samba from providing multicast DNS
       lineinfile: 
         name: /etc/frontview/samba/smb.conf.defaults
         state: present
         regexp: "^multicast dns register"
         line: "multicast dns register = no"
-      register: change_in_mdns                  
+      notify: restart samba
 
-    - name: restart samba
-      service: 
-        name: smb
-        state: restarted
-      when: change_in_mdns.changed
-
+    - name: Enable Samba syslog
+      lineinfile: 
+        name: /etc/frontview/samba/smb.conf.defaults
+        state: present
+        regexp: "^syslog"
+        line: "syslog = 1"
+      notify: restart avahi-daemon
+    - name: Disable avahi workstation publishers
+      lineinfile: 
+        name: /etc/avahi/avahi-daemon.conf
+        insertafter: "^[publish]"
+        state: present
+        regexp: "^publish-workstation="
+        line: "^publish-workstation=no"
+      notify: restart avahi-daemon
     - name: Add Avahi based SMB service
       template:
         src: samba.service.j2
@@ -32,3 +34,13 @@
         owner: root
         group: root
         mode: 0444
+
+handlers:
+    - name: restart samba
+      service:
+        name: smb
+        state: restarted
+    - name: restart avahi-daemon
+      service:
+        name: avahi-daemon
+        state: restarted
