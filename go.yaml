@@ -35,7 +35,20 @@
         group: root
         mode: 0444
 
-handlers:
+    - name: Add usbkey_umount
+      template:
+        src: usbkey_umount.j2
+        dest: /etc/init.d/usbkey_umount
+        owner: root
+        group: root
+        mode: 0555
+
+    - name: systemctl disable leafp2p
+      raw: systemctl disable leafp2p
+
+    - name: chmod 444 /etc/init.d/leafp2p
+      raw: chmod 444 /etc/init.d/leafp2p
+
     - name: restart samba
       service:
         name: smb
