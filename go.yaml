@@ -3,6 +3,16 @@
 - name: Readynas Playbook
   hosts: readynas
 
+  handlers:
+    - name: restart samba
+      service:
+        name: smb
+        state: restarted
+    - name: restart avahi-daemon
+      service:
+        name: avahi-daemon
+        state: restarted
+
   tasks:
     - name: Disable Samba from providing multicast DNS
       lineinfile: 
@@ -25,7 +35,7 @@
         insertafter: "^[publish]"
         state: present
         regexp: "^publish-workstation="
-        line: "^publish-workstation=no"
+        line: "publish-workstation=no"
       notify: restart avahi-daemon
     - name: Add Avahi based SMB service
       template:
@@ -43,17 +53,14 @@
         group: root
         mode: 0555
 
-    - name: systemctl disable leafp2p
-      raw: systemctl disable leafp2p
+    - name: disable leafp2p
+      service:
+        name: leafp2p
+        enabled: no
+        state: stopped
 
     - name: chmod 444 /etc/init.d/leafp2p
-      raw: chmod 444 /etc/init.d/leafp2p
-
-    - name: restart samba
-      service:
-        name: smb
-        state: restarted
-    - name: restart avahi-daemon
-      service:
-        name: avahi-daemon
-        state: restarted
+      file:
+        name: /etc/init.d/leafp2p 
+        mode: 0444
+        follow: yes
